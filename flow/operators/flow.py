@@ -142,10 +142,10 @@ class Flow(Operator):
             name = self.flowname + '-' + uid
             registered[name] = args
 
+            print(f"try delete dag {self.cloudburst.delete_dag(name)}")
             success, error = self.cloudburst.register_dag(
                 name, functions, connections, colocated=self.colocates,
                 gpu_functions=gpus, batching_functions=batching)
-
             if not success:
                 raise FlowError(str(error))
 
