@@ -40,7 +40,7 @@ class MultiOperator(Operator):
         # Clear the metadata in the suboperators to avoid any lingering cruft.
         for op in ops:
             op.upstreams = []
-            op.dowwnstreams = []
+            op.downstreams = []
             op.cloudburst = None
 
         class MultiLogic:
