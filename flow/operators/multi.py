@@ -82,7 +82,8 @@ class MultiOperator(Operator):
 
                     # This will all be repeated because of the way Cloudburst's
                     # batching works, so we just pick the first one.
-                    final = final[0]
+                    if isinstance(final, list):
+                        final = final[0]
                 else:
                     if type(prev) == bytes:
                         serialized = True
