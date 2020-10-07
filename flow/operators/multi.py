@@ -6,8 +6,7 @@ from flow.types.table import (
     demux_tables,
     deserialize,
     merge_tables,
-    serialize,
-    Table
+    serialize
 )
 
 class MultiOperator(Operator):
@@ -40,7 +39,7 @@ class MultiOperator(Operator):
         # Clear the metadata in the suboperators to avoid any lingering cruft.
         for op in ops:
             op.upstreams = []
-            op.downstreams = []
+            op.dowwnstreams = []
             op.cloudburst = None
 
         class MultiLogic:
@@ -73,7 +72,7 @@ class MultiOperator(Operator):
                 batching = all([op.batching for op in ops])
                 serialized = False
                 if batching:
-                    if isinstance(prev, Table):
+                    if not isinstance(prev, list):
                         prev = [prev]
                     if type(prev[0]) == bytes:
                         serialized = True
