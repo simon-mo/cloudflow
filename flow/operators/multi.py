@@ -6,7 +6,8 @@ from flow.types.table import (
     demux_tables,
     deserialize,
     merge_tables,
-    serialize
+    serialize,
+    Table
 )
 
 class MultiOperator(Operator):
@@ -72,6 +73,8 @@ class MultiOperator(Operator):
                 batching = all([op.batching for op in ops])
                 serialized = False
                 if batching:
+                    if isinstance(prev, Table):
+                        prev = [prev]
                     if type(prev[0]) == bytes:
                         serialized = True
                         prev = [deserialize(tbl) for tbl in prev]
