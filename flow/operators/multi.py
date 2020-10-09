@@ -2,30 +2,28 @@ import logging
 from typing import List
 
 from flow.operators.base import Operator
-from flow.types.table import (
-    demux_tables,
-    deserialize,
-    merge_tables,
-    serialize
-)
+from flow.types.table import demux_tables, deserialize, merge_tables, serialize
+
 
 class MultiOperator(Operator):
-    def __init__(self,
-                 ops: List[Operator],
-                 whole: bool,
-                 flowname: str,
-                 sink):
-        self.__name__ = 'MultiOperator'
-        def x(x: int): x + 1 # XXX: This is a hack for registration.
+    def __init__(self, ops: List[Operator], whole: bool, flowname: str, sink):
+        self.__name__ = "MultiOperator"
+
+        def x(x: int):
+            x + 1  # XXX: This is a hack for registration.
+
         self.fn = x
         self._setup(flowname)
 
         self.ops = ops
         self.whole = whole
 
+        self.gpu = any(op.gpu for op in self.ops)
+
         if whole and len(ops) > 1:
-            raise FlowError('Cannot execute a whole DAG if multiple operators'
-                            + ' are given.')
+            raise FlowError(
+                "Cannot execute a whole DAG if multiple operators" + " are given."
+            )
 
         if whole:
             logics = ops
@@ -64,9 +62,9 @@ class MultiOperator(Operator):
                 if len(inp) == 1:
                     inp = inp[0]
 
-                prev = inp # inp should either be a Table or a list of Tables.
+                prev = inp  # inp should either be a Table or a list of Tables.
                 if type(inp) == bytes:
-                    print('Received a non-batched serialized input.')
+                    print("Received a non-batched serialized input.")
 
                 # If the input is a list of Tables, then batching is enabled.
                 batching = all([op.batching for op in ops])
@@ -140,7 +138,6 @@ class MultiOperator(Operator):
                 return prev
 
         self.logic = MultiLogic
-
 
     def get_exec_args(self):
         return (self.final,)

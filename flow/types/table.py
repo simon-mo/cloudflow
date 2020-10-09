@@ -6,16 +6,13 @@ import pyarrow as pa
 
 from flow.types.basic import get_from_proto, Type, NumpyType, BASIC_TYPES
 from flow.types.error import FlowError
-from flow.types.flow_pb2 import (
-    ProtoSchema,
-    ProtoTable
-)
+from flow.types.flow_pb2 import ProtoSchema, ProtoTable
+
 
 class Row:
-    qid_key = 'qid'
+    qid_key = "qid"
 
-    def __init__(self, schema: List[Tuple[str, Type]], vals: List[Any], qid:
-                 int):
+    def __init__(self, schema: List[Tuple[str, Type]], vals: List[Any], qid: int):
         self.data = {}
         self.schema = schema
 
@@ -38,13 +35,14 @@ class Row:
 
     def __setitem__(self, key, value):
         if key == Row.qid_key:
-            raise FlowError('Cannot modify query ID of a row.')
+            raise FlowError("Cannot modify query ID of a row.")
 
         for name, tp in self.schema:
             if key == name:
                 if not isinstance(value, tp.typ):
-                    raise FlowError(f'Invalid update to {key}: Does not match'
-                                    + f'type {tp}.')
+                    raise FlowError(
+                        f"Invalid update to {key}: Does not match" + f"type {tp}."
+                    )
                 else:
                     break
 
@@ -57,9 +55,10 @@ class Row:
         vals = []
         for name, _ in self.schema:
             data = self.data[name]
-            vals.append(name + ': ' + str(data))
+            vals.append(name + ": " + str(data))
 
-        return '[' + ', '.join(vals) + ']'
+        return "[" + ", ".join(vals) + "]"
+
 
 def merge_schema(lschema, rschema):
     new_schema = []
@@ -70,6 +69,7 @@ def merge_schema(lschema, rschema):
             new_schema.append(tp)
 
     return new_schema
+
 
 def merge_row(left: Row, right: Row, schema):
     vals = []
@@ -95,35 +95,42 @@ class Table:
 
         for _, typ in schema:
             if typ not in BASIC_TYPES:
-                raise RuntimeError(f'{typ.__name__} is not a valid column type.')
+                raise RuntimeError(
+                    f"{typ.__name__} is not a valid column type for {_}."
+                )
 
     def _check(self, vals: List[Any]):
         if len(vals) != len(self.schema):
-            raise FlowError(f'Expected {len(self.schema)} vals but found'
-                            + f' {len(vals)}')
+            raise FlowError(
+                f"Expected {len(self.schema)} vals but found" + f" {len(vals)}"
+            )
 
         for idx, val in enumerate(vals):
             name, typ = self.schema[idx]
 
             # None values are okay because they are NULLs.
             if val is not None and not isinstance(val, typ.typ):
-                raise FlowError(f'Expected type {typ.typ} but instead found' +
-                                f' {type(val)} for column {name}')
+                raise FlowError(
+                    f"Expected type {typ.typ} but instead found"
+                    + f" {type(val)} for column {name}"
+                )
 
         return True
 
-    def insert(self, vals: List[Any], qid: int=None) -> bool:
+    def insert(self, vals: List[Any], qid: int = None) -> bool:
         if isinstance(vals, Row):
             if vals.schema == self.schema:
                 self.data.append(vals)
                 return True
 
-            raise FlowError(f'Invalid row insertion: {vals}')
+            raise FlowError(f"Invalid row insertion: {vals}")
 
         if not isinstance(vals, list):
-            raise FlowError('Unrecognized type: ' + str(vals) +
-                            '\n\nCan only insert a Row or a list.')
-
+            raise FlowError(
+                "Unrecognized type: "
+                + str(vals)
+                + "\n\nCan only insert a Row or a list."
+            )
 
         if not self._check(vals):
             return False
@@ -153,7 +160,7 @@ class Table:
         return new_table
 
     def __str__(self):
-        return '\n'.join([str(row) for row in self.data])
+        return "\n".join([str(row) for row in self.data])
 
 
 class GroupbyTable:
@@ -182,10 +189,10 @@ def merge_tables(tables: List[Table]) -> (Table, Dict[int, int]):
     schema = tables[0].schema
     for other in tables[1:]:
         if other.schema != schema:
-            raise FlowError(f'Schema mismatch:\n\t{schema}\n\t{other.schema}')
+            raise FlowError(f"Schema mismatch:\n\t{schema}\n\t{other.schema}")
 
     mappings = {}
-    mappings['NUM_TABLES'] = len(tables)
+    mappings["NUM_TABLES"] = len(tables)
     result = Table(schema)
 
     qid = 0
@@ -202,9 +209,10 @@ def merge_tables(tables: List[Table]) -> (Table, Dict[int, int]):
 
     return result, mappings
 
+
 def demux_tables(table: Table, mappings: Dict[int, int]):
     result = []
-    num_tables = mappings['NUM_TABLES']
+    num_tables = mappings["NUM_TABLES"]
     for _ in range(num_tables):
         tbl = Table(table.schema)
         result.append(tbl)
@@ -217,14 +225,16 @@ def demux_tables(table: Table, mappings: Dict[int, int]):
 
         qid = row[Row.qid_key]
         tbl_index = mappings[qid]
-        print(f'Trying to insert at {tbl_index} and there {len(result)} tables')
+        print(f"Trying to insert at {tbl_index} and there {len(result)} tables")
 
         result[tbl_index].insert(vals)
 
     return result
 
+
 def serialize(table: Table) -> Tuple:
     import time
+
     start = time.time()
 
     result = ProtoTable()
@@ -273,6 +283,7 @@ def serialize(table: Table) -> Tuple:
     # end = time.time()
     # print(f'Total {end - start}')
     # return tuple(result)
+
 
 def deserialize(serialized: bytes) -> Table:
     ptable = ProtoTable()
