@@ -95,6 +95,10 @@ class Table:
 
         for _, typ in schema:
             if typ not in BASIC_TYPES:
+                if typ is None:
+                    raise RuntimeError(
+                        f"Column {_} has None, invalid column type: {schema}"
+                    )
                 raise RuntimeError(
                     f"{typ.__name__} is not a valid column type for {_}."
                 )
