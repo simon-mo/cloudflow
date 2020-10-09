@@ -1,25 +1,31 @@
 from flow.operators.base import Operator
 from flow.types.error import FlowError
 from flow.types.table import deserialize, serialize, Table
+from flow.types.basic import NumpyType
 
 # If the dynamic variable is set to be true, the lookup_key is treated as a
 # column in the previous function's output's table, which (ideally,
 # post-breakpoint) is treated as a reference input to this function's argument.
 class LookupOperator(Operator):
     def __str__(self):
-        return self.fn_name + '-' + self.lookup_key
+        return self.fn_name + "-" + self.lookup_key
 
     def __repr__(self):
-        return self.fn_name + '-' + self.lookup_key
+        return self.fn_name + "-" + self.lookup_key
 
-    def __init__(self,
-                 flowname: str,
-                 lookup_key: str,
-                 dynamic: bool,
-                 local_dummy: object,
-                 sink: list):
-        self.__name__ = 'LookupOperator'
-        def x(x: int): x + 1 # XXX: This is a hack for registration
+    def __init__(
+        self,
+        flowname: str,
+        lookup_key: str,
+        dynamic: bool,
+        local_dummy: object,
+        sink: list,
+    ):
+        self.__name__ = "LookupOperator"
+
+        def x(x: int):
+            x + 1  # XXX: This is a hack for registration
+
         self.fn = x
         self._setup(flowname)
 
@@ -36,7 +42,9 @@ class LookupOperator(Operator):
             def preprocess(self, _):
                 pass
 
-            def run(self, cloudburst, lookup_key, dynamic: bool, input_object, inp: Table):
+            def run(
+                self, cloudburst, lookup_key, dynamic: bool, input_object, inp: Table
+            ):
                 from flow.types.basic import get_type
 
                 serialized = False
@@ -51,7 +59,11 @@ class LookupOperator(Operator):
                     obj = cloudburst.get(lookup_key)
 
                 schema = list(inp.schema)
-                schema.append((lookup_key, get_type(type(obj))))
+                value_type = get_type(type(obj))
+                # HACK: doing this for vid_class expr
+                if value_type is None:
+                    value_type = NumpyType
+                schema.append((lookup_key, value_type))
 
                 new_table = Table(schema)
                 for row in inp.get():
@@ -71,15 +83,16 @@ class LookupOperator(Operator):
         else:
             self.exec_args = (self.lookup_key, self.dynamic, None)
 
+
 # This operator is only used when there is a dynamic lookup. It is added on to
 # the end of the previous operator
 class LookupHelperOperator(Operator):
-    def __init__(self,
-                 flowname: str,
-                 column: str,
-                 sink: list):
-        self.__name__ = 'LookupHelperOperator'
-        def x(x: int): x + 1 # XXX: This is a hack for registration
+    def __init__(self, flowname: str, column: str, sink: list):
+        self.__name__ = "LookupHelperOperator"
+
+        def x(x: int):
+            x + 1  # XXX: This is a hack for registration
+
         self.fn = x
         self._setup(flowname)
 
